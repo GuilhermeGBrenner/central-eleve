@@ -1,8 +1,8 @@
 """
 sheets_db.py — Google Sheets as database for Central Eleve.
-Uses google-auth (modern lib). Requires credentials.json in same folder.
+Supports credentials.json (local) or GOOGLE_CREDENTIALS env var (Render).
 """
-import gspread, hashlib, os
+import gspread, hashlib, os, json
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 
@@ -16,7 +16,12 @@ _sheet = None
 def get_client():
     global _client
     if _client is None:
-        creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
+        env_creds = os.environ.get('GOOGLE_CREDENTIALS')
+        if env_creds:
+            info = json.loads(env_creds)
+            creds = Credentials.from_service_account_info(info, scopes=SCOPES)
+        else:
+            creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
         _client = gspread.authorize(creds)
     return _client
 

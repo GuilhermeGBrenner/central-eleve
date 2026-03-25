@@ -241,7 +241,18 @@ def categorias_view():
     cats = db.get_categorias(uid)
     return render_template('categorias.html', cats=cats)
 
+@app.route('/icon')
+def icon():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+    <rect width="192" height="192" rx="40" fill="#0a0b0e"/>
+    <rect x="16" y="16" width="160" height="160" rx="32" fill="url(#g)"/>
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6ee7b7"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
+    <text x="96" y="118" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" font-weight="700" fill="#fff">E</text>
+    </svg>'''
+    return svg, 200, {'Content-Type': 'image/svg+xml'}
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print("[Central Eleve] Iniciando...")
-    app.run(debug=True, host='0.0.0.0', port=port)
+    debug = os.environ.get('RENDER') is None
+    print("[Central Eleve] Iniciando..." + (" (debug)" if debug else " (production)"))
+    app.run(debug=debug, host='0.0.0.0', port=port)

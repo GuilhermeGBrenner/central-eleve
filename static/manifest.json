@@ -1,0 +1,17 @@
+{
+  "name": "Central Eleve",
+  "short_name": "Eleve",
+  "description": "Controle financeiro inteligente",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0b0e",
+  "theme_color": "#6ee7b7",
+  "icons": [
+    {
+      "src": "/icon",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
