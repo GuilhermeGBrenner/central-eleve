@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="filter-bar">
+<span style="font-size:14px;font-weight:600">Mês:</span>
+<select onchange="location.href='/?mes='+this.value">
+{% for m in meses %}<option value="{{m}}" {% if m==mes_atual %}selected{% endif %}>{{mes_label(m)}}</option>{% endfor %}
+</select>
+<form method="post" action="/novo_mes" style="display:flex;gap:8px;align-items:center">
+<input type="month" name="mes_ref" style="width:auto" required>
+<button class="btn btn-outline btn-sm" type="submit">Criar mês</button>
+</form>
+<a href="/cadastro{% if mes_atual %}?mes={{mes_atual}}{% endif %}" class="btn btn-accent btn-sm" style="margin-left:auto">+ Nova transação</a>
+</div>
+{% if mes_atual %}
+<div class="grid g4" style="margin-bottom:16px">
+<div class="metric m-blue"><div class="l">Entradas</div><div class="v">R$ {{ '{:,.2f}'.format(total_entrada).replace(',','X').replace('.',',').replace('X','.') }}</div></div>
+<div class="metric m-red"><div class="l">Saídas</div><div class="v">R$ {{ '{:,.2f}'.format(total_saida).replace(',','X').replace('.',',').replace('X','.') }}</div><div class="s">Meta: R$ {{ current_user.meta_gasto if current_user else '4500' }}</div></div>
+<div class="metric {% if economia>=0 %}m-green{% else %}m-red{% endif %}"><div class="l">Economia</div><div class="v">R$ {{ '{:,.2f}'.format(economia).replace(',','X').replace('.',',').replace('X','.') }}</div><div class="s">{{ '{:.1f}'.format(pct_economia) }}%</div></div>
+<div class="metric m-amber"><div class="l">Situação</div><div class="v" style="font-size:13px">{% for s in sit_resumo %}<span class="badge b-{{s['situacao']|lower}}">{{s['situacao']}}: R$ {{ '{:,.0f}'.format(s['saidas']) }}</span> {% endfor %}</div></div>
+</div>
+<div class="grid g2" style="margin-bottom:16px">
+<div class="card"><div class="card-h"><span class="dot" style="background:var(--accent)"></span>Gastos por categoria</div><div class="chart-wrap" style="height:260px"><canvas id="catChart"></canvas></div></div>
+<div class="card"><div class="card-h"><span class="dot" style="background:var(--blue)"></span>Evolução mensal</div><div class="chart-wrap" style="height:260px"><canvas id="histChart"></canvas></div></div>
+</div>
+<div class="card">
+<div class="card-h"><span class="dot" style="background:var(--purple)"></span>Transações — {{mes_label(mes_atual)}} ({{transacoes|length}})</div>
+<div style="overflow-x:auto"><table>
+<tr><th>Data</th><th>Item</th><th>Categoria</th><th>Tipo</th><th>Situação</th><th style="text-align:right">Valor</th><th>Ações</th></tr>
+{% for t in transacoes %}
+<tr>
+<td class="mono">{{t['data']}}</td><td>{{t['item']}}</td>
+<td><span class="cat-badge"><span class="cat-dot" style="background:{{t['cat_cor']}}"></span>{{t['categoria']}}</span></td>
+<td style="color:{% if t['tipo']=='Entrada' %}var(--accent){% else %}var(--red){% endif %}">{{t['tipo']}}</td>
+<td><a href="/toggle/{{t['id']}}" style="text-decoration:none"><span class="badge b-{{t['situacao']|lower}}">{{t['situacao']}}</span></a></td>
+<td class="mono" style="text-align:right;color:{% if t['tipo']=='Entrada' %}var(--accent){% else %}var(--red){% endif %}">R$ {{ '{:,.2f}'.format(t['valor']).replace(',','X').replace('.',',').replace('X','.') }}</td>
+<td class="actions"><a href="/editar/{{t['id']}}" class="btn btn-outline btn-sm">Editar</a><a href="/excluir/{{t['id']}}" class="btn btn-red btn-sm" onclick="return confirm('Excluir?')">×</a></td>
+</tr>{% endfor %}
+</table></div></div>
+<div class="card" style="margin-top:16px"><div class="card-h"><span class="dot" style="background:var(--amber)"></span>Resumo por categoria</div>
+<table><tr><th>Categoria</th><th>Tipo</th><th>Qtd</th><th style="text-align:right">Total</th><th style="text-align:right">%</th></tr>
+{% for r in resumo %}<tr>
+<td><span class="cat-badge"><span class="cat-dot" style="background:{{r['cor']}}"></span>{{r['nome']}}</span></td>
+<td>{{r['tipo']}}</td><td class="mono">{{r['qtd']}}</td>
+<td class="mono" style="text-align:right;color:{% if r['tipo']=='Entrada' %}var(--accent){% else %}var(--red){% endif %}">R$ {{ '{:,.2f}'.format(r['total']).replace(',','X').replace('.',',').replace('X','.') }}</td>
+<td class="mono" style="text-align:right">{% if r['tipo']=='Saída' and total_saida>0 %}{{ '{:.1f}'.format(r['total']/total_saida*100) }}%{% endif %}</td>
+</tr>{% endfor %}</table></div>
+<script>
+const isDark=document.documentElement.dataset.tema==='dark';
+const txtC=isDark?'#6b6980':'#8a8ca5';const gridC=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
+const F=v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2});
+const rd=[{% for r in resumo %}{% if r['tipo']=='Saída' %}{n:"{{r['nome']}}",t:{{r['total']}},c:"{{r['cor']}}"},{% endif %}{% endfor %}];
+if(rd.length){new Chart(document.getElementById('catChart'),{type:'doughnut',data:{labels:rd.map(d=>d.n),datasets:[{data:rd.map(d=>d.t),backgroundColor:rd.map(d=>d.c),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:txtC,font:{size:11},padding:6,boxWidth:12}},tooltip:{callbacks:{label:c=>F(c.parsed)}}}}});}
+const h={{hist|safe}};
+if(h.length){new Chart(document.getElementById('histChart'),{type:'bar',data:{labels:h.map(x=>x.mes),datasets:[{label:'Saídas',data:h.map(x=>x.saida),backgroundColor:isDark?'#f87171':'#ef4444',borderRadius:4},{label:'Economia',data:h.map(x=>x.economia),backgroundColor:isDark?'#6ee7b7':'#0d9668',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+F(c.parsed.y)}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:txtC,font:{size:10}}},y:{stacked:true,grid:{color:gridC},ticks:{color:txtC,callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}}}});}
+</script>
+{% else %}
+<div style="text-align:center;padding:80px;color:var(--text3)"><p style="font-size:18px;margin-bottom:8px">Nenhum dado ainda</p><p>Crie um mês acima ou <a href="/cadastro">cadastre uma transação</a>.</p></div>
+{% endif %}
+{% endblock %}

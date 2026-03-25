@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% block title %}Patrimônio Eleve+ — Central Eleve{% endblock %}
+{% block extra_css %}
+<style>
+.pe-header{background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#0c4a6e 100%);border-radius:16px;padding:28px 32px;margin-bottom:20px;position:relative;overflow:hidden}
+.pe-header::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(96,165,250,0.08)}
+.pe-header::after{content:'';position:absolute;bottom:-20px;left:30%;width:120px;height:120px;border-radius:50%;background:rgba(250,204,21,0.05)}
+.pe-header .title{font-size:22px;font-weight:700;color:#f1f5f9;display:flex;align-items:center;gap:10px}
+.pe-header .title .plus{font-size:11px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,0.15);padding:2px 8px;border-radius:4px;letter-spacing:1px}
+.pe-header .sub{color:#94a3b8;font-size:13px;margin-top:4px}
+.pe-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px;position:relative;z-index:1}
+.pe-m{background:rgba(255,255,255,0.05);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px}
+.pe-m .l{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#94a3b8;margin-bottom:4px}
+.pe-m .v{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#f1f5f9}
+.pe-m .s{font-size:11px;color:#64748b;margin-top:3px}
+.pe-m.gold .v{color:#fbbf24}.pe-m.gold .l{color:#fbbf24}
+.pe-m.sky .v{color:#38bdf8}.pe-m.sky .l{color:#38bdf8}
+.pe-m.lime .v{color:#a3e635}.pe-m.lime .l{color:#a3e635}
+.pe-m.rose .v{color:#fb7185}.pe-m.rose .l{color:#fb7185}
+
+.pe-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--bg2);padding:4px;border-radius:10px;overflow-x:auto;border:1px solid var(--border)}
+.pe-tabs .tb{padding:9px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap;transition:all .2s;border:none;background:transparent;font-family:'DM Sans',sans-serif}
+.pe-tabs .tb:hover{color:var(--text);background:var(--bg3)}.pe-tabs .tb.on{background:#1e3a5f;color:#38bdf8}
+[data-tema="light"] .pe-tabs .tb.on{background:#dbeafe;color:#1d4ed8}
+
+.pnl{display:none}.pnl.on{display:block}
+.ctrl{margin-bottom:14px}.ctrl label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
+.ctrl .rw{display:flex;align-items:center;gap:12px}.ctrl .rw input[type=range]{flex:1}
+.ctrl .rw .ot{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;min-width:90px;text-align:right;color:var(--accent)}
+.prog{height:10px;border-radius:5px;background:var(--bg4);overflow:hidden;margin:8px 0}
+.prog .fill{height:100%;border-radius:5px;transition:width .5s}
+</style>
+{% endblock %}
+{% block content %}
+<!-- PREMIUM HEADER -->
+<div class="pe-header">
+<div class="title">Patrimônio <span class="plus">ELEVE+</span></div>
+<div class="sub">{{ current_user.nome }} — Controle patrimonial inteligente</div>
+<div class="pe-metrics">
+  {% set tm = (1 + cdi/100) ** (1.0/12) - 1 %}
+  {% set rend_mes = patrimonio * tm * 0.825 %}
+  <div class="pe-m gold"><div class="l">Patrimônio</div><div class="v">R$ {{ '{:,.0f}'.format(patrimonio) }}</div></div>
+  <div class="pe-m sky"><div class="l">Rendimento CDI/mês</div><div class="v">R$ {{ '{:,.0f}'.format(rend_mes) }}</div><div class="s">{{ cdi }}% a.a. líquido</div></div>
+  <div class="pe-m lime"><div class="l">Economia média</div><div class="v">R$ {{ '{:,.0f}'.format(avg_economia) }}</div><div class="s">{{ '{:.1f}'.format(avg_economia/avg_entrada*100 if avg_entrada else 0) }}% da receita</div></div>
+  <div class="pe-m rose"><div class="l">Gasto médio</div><div class="v">R$ {{ '{:,.0f}'.format(avg_saida) }}</div><div class="s">Meta: R$ {{ '{:,.0f}'.format(meta_gasto) }}</div></div>
+</div>
+</div>
+
+<div class="pe-tabs" id="ptabs">
+  <button class="tb on" data-p="visao">Visão geral</button>
+  <button class="tb" data-p="proj">Projeção</button>
+  <button class="tb" data-p="cen">Cenários</button>
+  <button class="tb" data-p="invest">Investimentos</button>
+  <button class="tb" data-p="fire">Liberdade financeira</button>
+</div>
+
+<!-- VISÃO GERAL -->
+<div class="pnl on" id="p-visao">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-h"><span class="dot" style="background:#38bdf8"></span>Reserva de emergência</div>
+    <div class="grid g3">
+      <div class="metric m-blue"><div class="l">Patrimônio</div><div class="v">R$ {{ '{:,.0f}'.format(patrimonio) }}</div></div>
+      <div class="metric m-amber"><div class="l">Reserva (6 meses)</div><div class="v">R$ {{ '{:,.0f}'.format(meta_gasto*6) }}</div></div>
+      <div class="metric m-green"><div class="l">Cobertura</div><div class="v">{{ '{:.1f}'.format(patrimonio/meta_gasto if meta_gasto else 0) }} meses</div></div>
+    </div>
+    <div class="prog" style="height:14px;margin-top:12px">
+      {% set pct=patrimonio/(meta_gasto*12)*100 if meta_gasto else 0 %}
+      <div class="fill" style="width:{{pct if pct<=100 else 100}}%;background:linear-gradient(90deg,#38bdf8,#6ee7b7)"></div>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><span class="dot" style="background:#6ee7b7"></span>Evolução mensal</div><div class="chart-wrap" style="height:280px"><canvas id="cEv"></canvas></div></div>
+    <div class="card"><div class="card-h"><span class="dot" style="background:#a78bfa"></span>Tendência por categoria</div><div class="chart-wrap" style="height:280px"><canvas id="cTr"></canvas></div></div>
+  </div>
+</div>
+
+<!-- PROJEÇÃO -->
+<div class="pnl" id="p-proj">
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-h"><span class="dot" style="background:#38bdf8"></span>Parâmetros</div>
+      <div class="ctrl"><label>Patrimônio inicial</label><div class="rw"><input type="range" min="0" max="500000" step="1000" value="{{patrimonio|int}}" id="pPat"><span class="ot" id="pPatO"></span></div></div>
+      <div class="ctrl"><label>Aporte mensal</label><div class="rw"><input type="range" min="0" max="20000" step="100" value="{{avg_economia|int}}" id="pAp"><span class="ot" id="pApO"></span></div></div>
+      <div class="ctrl"><label>CDI anual (%)</label><div class="rw"><input type="range" min="6" max="18" step="0.5" value="{{cdi}}" id="pCdi"><span class="ot" id="pCdiO"></span></div></div>
+      <div class="ctrl"><label>Horizonte (anos)</label><div class="rw"><input type="range" min="1" max="15" step="1" value="5" id="pAn"><span class="ot" id="pAnO"></span></div></div>
+      <div class="ctrl"><label>Gastos extras/ano</label><div class="rw"><input type="range" min="0" max="40000" step="500" value="13000" id="pGa"><span class="ot" id="pGaO"></span></div></div>
+      <div class="ctrl"><label>Inflação (%)</label><div class="rw"><input type="range" min="0" max="12" step="0.5" value="5" id="pIn"><span class="ot" id="pInO"></span></div></div>
+    </div>
+    <div>
+      <div class="grid g2" style="margin-bottom:16px">
+        <div class="metric m-green"><div class="l">Patrimônio final</div><div class="v" id="prF">—</div><div class="s" id="prFS"></div></div>
+        <div class="metric m-blue"><div class="l">Final (real)</div><div class="v" id="prR">—</div><div class="s">Ajustado inflação</div></div>
+        <div class="metric m-purple"><div class="l">Total aportado</div><div class="v" id="prA">—</div></div>
+        <div class="metric m-amber"><div class="l">Rend. mensal final</div><div class="v" id="prM">—</div><div class="s">Líquido IR</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card"><div class="card-h"><span class="dot" style="background:#6ee7b7"></span>Evolução</div><div class="chart-wrap" style="height:340px"><canvas id="cPr"></canvas></div>
+  <div class="lgd"><span><span class="sq" style="background:#6ee7b7"></span>Nominal</span><span><span class="sq" style="background:#f472b6"></span>Real</span><span><span class="sq" style="background:#a78bfa"></span>Aportes</span></div></div>
+</div>
+
+<!-- CENÁRIOS -->
+<div class="pnl" id="p-cen">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-h"><span class="dot" style="background:#60a5fa"></span>"E se..."</div>
+    <div class="grid g3">
+      <div class="ctrl"><label>Receita</label><div class="rw"><input type="range" min="3000" max="30000" step="100" value="{{last_entrada|int}}" id="sRe"><span class="ot" id="sReO"></span></div></div>
+      <div class="ctrl"><label>Gasto</label><div class="rw"><input type="range" min="2000" max="15000" step="100" value="{{meta_gasto|int}}" id="sGa"><span class="ot" id="sGaO"></span></div></div>
+      <div class="ctrl"><label>CDI</label><div class="rw"><input type="range" min="6" max="18" step="0.5" value="{{cdi}}" id="sCd"><span class="ot" id="sCdO"></span></div></div>
+    </div>
+  </div>
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="metric m-green"><div class="l">Economia/mês</div><div class="v" id="scE">—</div><div class="s" id="scEP">—</div></div>
+    <div class="metric m-blue"><div class="l">1 ano</div><div class="v" id="sc1">—</div></div>
+    <div class="metric m-purple"><div class="l">3 anos</div><div class="v" id="sc3">—</div></div>
+    <div class="metric m-amber"><div class="l">5 anos</div><div class="v" id="sc5">—</div></div>
+  </div>
+  <div class="card"><div class="card-h"><span class="dot" style="background:#6ee7b7"></span>Comparativo 5 anos</div><div class="chart-wrap" style="height:300px"><canvas id="cSc"></canvas></div>
+  <div class="lgd"><span><span class="sq" style="background:#6ee7b7"></span>Seu cenário</span><span><span class="sq" style="background:#60a5fa"></span>Rec +30%</span><span><span class="sq" style="background:#f87171"></span>Rec -30%</span><span><span class="sq" style="background:#fbbf24"></span>Gasto +50%</span></div></div>
+</div>
+
+<!-- INVESTIMENTOS -->
+<div class="pnl" id="p-invest">
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-h"><span class="dot" style="background:#38bdf8"></span>Simular investimento</div>
+      <div class="form-group"><label>Nome</label><input type="text" id="ivN" value="CDB 120% CDI"></div>
+      <div class="form-group"><label>Valor (R$)</label><input type="number" id="ivV" value="10000"></div>
+      <div class="grid g2" style="gap:12px">
+        <div class="form-group"><label>Rendimento total (%)</label><input type="number" id="ivR" value="40" step="0.1"></div>
+        <div class="form-group"><label>Prazo (meses)</label><input type="number" id="ivP" value="6"></div>
+      </div>
+      <div class="form-group"><label>Tipo</label><select id="ivT"><option value="cdb">CDB (IR regressivo)</option><option value="lci">LCI/LCA (isento)</option><option value="acao">Ações (15%)</option></select></div>
+      <button class="btn btn-accent" onclick="addI()" style="width:100%;margin-top:4px">Adicionar</button>
+    </div>
+    <div>
+      <div class="grid g2" style="margin-bottom:16px">
+        <div class="metric m-green"><div class="l">Total investido</div><div class="v" id="iT">R$ 0</div></div>
+        <div class="metric m-blue"><div class="l">Retorno líquido</div><div class="v" id="iR">R$ 0</div></div>
+      </div>
+      <div id="iL" style="color:var(--text3);text-align:center;padding:24px;font-size:13px">Nenhum investimento simulado.</div>
+    </div>
+  </div>
+  <div class="card"><div class="chart-wrap" style="height:250px"><canvas id="cIv"></canvas></div></div>
+</div>
+
+<!-- FIRE -->
+<div class="pnl" id="p-fire">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-h"><span class="dot" style="background:#fbbf24"></span>Liberdade financeira</div>
+    <div class="grid g3">
+      <div class="ctrl"><label>Aporte mensal</label><div class="rw"><input type="range" min="0" max="20000" step="100" value="{{avg_economia|int}}" id="fAp"><span class="ot" id="fApO"></span></div></div>
+      <div class="ctrl"><label>Gasto mensal</label><div class="rw"><input type="range" min="2000" max="20000" step="100" value="{{meta_gasto|int}}" id="fGa"><span class="ot" id="fGaO"></span></div></div>
+      <div class="ctrl"><label>CDI (%)</label><div class="rw"><input type="range" min="6" max="18" step="0.5" value="{{cdi}}" id="fCd"><span class="ot" id="fCdO"></span></div></div>
+    </div>
+  </div>
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="metric m-green"><div class="l">Tempo até FIRE</div><div class="v" id="fT">—</div><div class="s" id="fD">—</div></div>
+    <div class="metric m-purple"><div class="l">Patrimônio necessário</div><div class="v" id="fPN">—</div></div>
+    <div class="metric m-blue"><div class="l">Progresso</div><div class="v" id="fPr">—</div><div class="prog"><div class="fill" style="background:linear-gradient(90deg,#38bdf8,#fbbf24)" id="fPB"></div></div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-h"><span class="dot" style="background:#6ee7b7"></span>Rendimento vs gastos</div>
+    <div class="chart-wrap" style="height:320px"><canvas id="cFi"></canvas></div>
+    <div class="lgd"><span><span class="sq" style="background:#6ee7b7"></span>Rendimento/mês</span><span><span class="sq" style="background:#f87171"></span>Gastos</span></div>
+    <div style="margin-top:10px;font-size:13px;color:var(--text2)" id="fMsg"></div>
+  </div>
+  <div class="card"><div class="card-h"><span class="dot" style="background:#fbbf24"></span>Marcos patrimoniais</div><div id="fMa"></div></div>
+</div>
+
+<script>
+const PAT={{patrimonio}},CDI={{cdi}},META={{meta_gasto|int}};
+const MF=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const F=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
+const FK=v=>'R$ '+(v/1000).toFixed(0)+'k';
+const isDk=document.documentElement.dataset.tema==='dark';
+const tC=isDk?'#64748b':'#8a8ca5';const gC=isDk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
+function mL(m){const i=(2+m)%12;const y=2026+Math.floor((2+m)/12);return MF[i]+'/'+String(y).slice(2);}
+function irM(m){if(m<=6)return .225;if(m<=12)return .2;if(m<=24)return .175;return .15;}
+let CH={},invs=[];
+function $(id){return document.getElementById(id);}
+
+document.getElementById('ptabs').addEventListener('click',e=>{
+  if(!e.target.classList.contains('tb'))return;
+  document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.pe-tabs .tb').forEach(t=>t.classList.remove('on'));
+  document.getElementById('p-'+e.target.dataset.p).classList.add('on');
+  e.target.classList.add('on');
+});
+
+// VISÃO
+(function(){
+  const h={{monthly|safe}};if(!h.length)return;
+  CH.ev=new Chart($('cEv'),{type:'bar',data:{labels:h.map(x=>x.label),datasets:[
+    {label:'Gastos',data:h.map(x=>x.saida),backgroundColor:isDk?'#f87171':'#ef4444',borderRadius:4},
+    {label:'Economia',data:h.map(x=>x.economia),backgroundColor:isDk?'#6ee7b7':'#0d9668',borderRadius:4}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:tC,font:{size:10}}},y:{stacked:true,grid:{color:gC},ticks:{color:tC,callback:v=>FK(v)}}}}});
+  const ct={{cat_trend|safe}},ctL={{cat_trend_labels|safe}};
+  if(ct.length){CH.tr=new Chart($('cTr'),{type:'line',data:{labels:ctL,datasets:ct.map(c=>({label:c.nome,data:c.valores,borderColor:c.cor,pointRadius:2,borderWidth:2,tension:.3,fill:false}))},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:tC,font:{size:10},boxWidth:10,padding:6}}},
+    scales:{x:{grid:{display:false},ticks:{color:tC,font:{size:10}}},y:{grid:{color:gC},ticks:{color:tC,callback:v=>FK(v)}}}}});}
+})();
+
+// PROJEÇÃO
+function upP(){
+  const pi=+$('pPat').value,ap=+$('pAp').value,cdi=+$('pCdi').value,an=+$('pAn').value,ga=+$('pGa').value,inf=+$('pIn').value;
+  $('pPatO').textContent=F(pi);$('pApO').textContent=F(ap);$('pCdiO').textContent=cdi.toFixed(1).replace('.',',')+' %';
+  $('pAnO').textContent=an+'a';$('pGaO').textContent=F(ga);$('pInO').textContent=inf.toFixed(1).replace('.',',')+' %';
+  const tM=an*12,tm=Math.pow(1+cdi/100,1/12)-1,im=Math.pow(1+inf/100,1/12)-1;
+  let p=pi,tA=0,tR=0;const sP=[],sR=[],sA=[],lb=[];
+  for(let m=0;m<tM;m++){const lP=p*tm*(1-irM(m));p+=lP+ap;tA+=ap;tR+=lP;if(m%12===11)p-=ga;const df=Math.pow(1+im,m+1);lb.push(mL(m));sP.push(Math.round(p));sR.push(Math.round(p/df));sA.push(Math.round(pi+tA));}
+  const rF=p*tm*(1-irM(tM)),dfF=Math.pow(1+im,tM);
+  $('prF').textContent=F(p);$('prFS').textContent='×'+(p/pi).toFixed(1);$('prR').textContent=F(p/dfF);$('prA').textContent=F(tA);$('prM').textContent=F(rF);
+  if(CH.pj)CH.pj.destroy();
+  CH.pj=new Chart($('cPr'),{type:'line',data:{labels:lb,datasets:[
+    {label:'Nominal',data:sP,borderColor:'#6ee7b7',backgroundColor:'rgba(110,231,183,0.06)',fill:true,tension:.3,pointRadius:0,borderWidth:2},
+    {label:'Real',data:sR,borderColor:'#f472b6',borderDash:[4,3],pointRadius:0,borderWidth:2,fill:false,tension:.3},
+    {label:'Aportes',data:sA,borderColor:'#a78bfa',borderDash:[6,4],pointRadius:0,borderWidth:1.5,fill:false,tension:.3}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+F(c.parsed.y)}}},
+    scales:{x:{grid:{display:false},ticks:{color:tC,maxTicksLimit:12,font:{size:10}}},y:{grid:{color:gC},ticks:{color:tC,callback:v=>FK(v)}}}}});
+}
+['pPat','pAp','pCdi','pAn','pGa','pIn'].forEach(id=>$(id).addEventListener('input',upP));upP();
+
+// CENÁRIOS
+function upS(){
+  const rec=+$('sRe').value,gst=+$('sGa').value,cdi=+$('sCd').value;
+  $('sReO').textContent=F(rec);$('sGaO').textContent=F(gst);$('sCdO').textContent=cdi.toFixed(1).replace('.',',')+' %';
+  const ec=rec-gst;$('scE').textContent=F(ec);$('scEP').textContent=(ec/rec*100).toFixed(1)+'%';
+  function pj(ap,cd,n){const t=Math.pow(1+cd/100,1/12)-1;let p=PAT;const s=[];for(let m=0;m<n;m++){p+=p*t*(1-irM(m))+ap;s.push(Math.round(p));}return s;}
+  const lb=[];for(let m=0;m<60;m++)lb.push(mL(m));
+  const s1=pj(ec,cdi,60),s2=pj(rec*1.3-gst,cdi,60),s3=pj(Math.max(rec*.7-gst,0),cdi,60),s4=pj(Math.max(rec-gst*1.5,0),cdi,60);
+  $('sc1').textContent=F(s1[11]);$('sc3').textContent=F(s1[35]);$('sc5').textContent=F(s1[59]);
+  if(CH.sc)CH.sc.destroy();
+  CH.sc=new Chart($('cSc'),{type:'line',data:{labels:lb,datasets:[
+    {label:'Seu cenário',data:s1,borderColor:'#6ee7b7',pointRadius:0,borderWidth:2,tension:.3},
+    {label:'Rec +30%',data:s2,borderColor:'#60a5fa',pointRadius:0,borderWidth:1.5,borderDash:[4,3],tension:.3},
+    {label:'Rec -30%',data:s3,borderColor:'#f87171',pointRadius:0,borderWidth:1.5,borderDash:[4,3],tension:.3},
+    {label:'Gas +50%',data:s4,borderColor:'#fbbf24',pointRadius:0,borderWidth:1.5,borderDash:[4,3],tension:.3}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+F(c.parsed.y)}}},
+    scales:{x:{grid:{display:false},ticks:{color:tC,maxTicksLimit:10,font:{size:10}}},y:{grid:{color:gC},ticks:{color:tC,callback:v=>FK(v)}}}}});
+}
+['sRe','sGa','sCd'].forEach(id=>$(id).addEventListener('input',upS));upS();
+
+// INVESTIMENTOS
+function addI(){
+  const nm=$('ivN').value,vl=+$('ivV').value,rd=+$('ivR').value,pz=+$('ivP').value,tp=$('ivT').value;
+  if(!vl||!pz)return;let ir=0;if(tp==='cdb'){if(pz<=6)ir=.225;else if(pz<=12)ir=.2;else if(pz<=24)ir=.175;else ir=.15;}else if(tp!=='lci')ir=.15;
+  const lq=vl*(rd/100)*(1-ir),fn=vl+lq;
+  invs.push({nm,vl,lq,fn});renI();
+}
+function remI(i){invs.splice(i,1);renI();}
+function renI(){
+  if(!invs.length){$('iL').innerHTML='<div style="color:var(--text3);text-align:center;padding:24px;font-size:13px">Nenhum investimento.</div>';$('iT').textContent='R$ 0';$('iR').textContent='R$ 0';if(CH.iv)CH.iv.destroy();return;}
+  $('iT').textContent=F(invs.reduce((s,i)=>s+i.vl,0));$('iR').textContent=F(invs.reduce((s,i)=>s+i.lq,0));
+  $('iL').innerHTML=invs.map((v,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border-radius:8px;margin-bottom:6px;font-size:13px"><span style="flex:1;font-weight:500">'+v.nm+'</span><span class="mono">'+F(v.vl)+'</span><span class="mono pos">+'+F(v.lq)+'</span><span class="mono" style="color:var(--blue)">→ '+F(v.fn)+'</span><button class="btn btn-red btn-sm" onclick="remI('+i+')">×</button></div>').join('');
+  const co=['#6ee7b7','#60a5fa','#a78bfa','#fbbf24','#f87171'];
+  if(CH.iv)CH.iv.destroy();
+  CH.iv=new Chart($('cIv'),{type:'bar',data:{labels:invs.map(i=>i.nm),datasets:[
+    {label:'Investido',data:invs.map(i=>i.vl),backgroundColor:'rgba(255,255,255,0.06)',borderRadius:4},
+    {label:'Retorno',data:invs.map(i=>i.lq),backgroundColor:invs.map((_,i)=>co[i%co.length]),borderRadius:4}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:tC}},y:{stacked:true,grid:{color:gC},ticks:{color:tC,callback:v=>FK(v)}}}}});
+}
+
+// FIRE
+function upF(){
+  const ap=+$('fAp').value,gst=+$('fGa').value,cdi=+$('fCd').value;
+  $('fApO').textContent=F(ap);$('fGaO').textContent=F(gst);$('fCdO').textContent=cdi.toFixed(1).replace('.',',')+' %';
+  const tm=Math.pow(1+cdi/100,1/12)-1,pN=gst/(tm*0.85);
+  $('fPN').textContent=F(pN);const pr=Math.min(PAT/pN*100,100);$('fPr').textContent=pr.toFixed(1)+'%';$('fPB').style.width=pr+'%';
+  let p=PAT;const rS=[],gS=[],fL=[];let cx=-1;
+  for(let m=0;m<120;m++){const rl=p*tm*(1-irM(m));p+=rl+ap;rS.push(Math.round(rl));gS.push(gst);fL.push(mL(m));if(cx<0&&rl>=gst)cx=m;}
+  if(CH.fi)CH.fi.destroy();
+  CH.fi=new Chart($('cFi'),{type:'line',data:{labels:fL,datasets:[
+    {label:'Rend./mês',data:rS,borderColor:'#6ee7b7',backgroundColor:'rgba(110,231,183,0.06)',fill:true,pointRadius:0,borderWidth:2,tension:.3},
+    {label:'Gastos',data:gS,borderColor:'#f87171',borderDash:[6,4],pointRadius:0,borderWidth:2,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+F(c.parsed.y)}}},
+    scales:{x:{grid:{display:false},ticks:{color:tC,maxTicksLimit:12,font:{size:10}}},y:{grid:{color:gC},ticks:{color:tC,callback:v=>FK(v)}}}}});
+  if(cx>=0){const a=Math.floor(cx/12),ms=cx%12;$('fT').textContent=a+'a '+ms+'m';$('fD').textContent=mL(cx);
+    $('fMsg').innerHTML='Independência financeira em <span style="color:var(--accent);font-weight:600">'+a+' anos e '+ms+' meses</span>.';}
+  else{$('fT').textContent='>10a';$('fD').textContent='—';$('fMsg').textContent='Não atinge em 10 anos. Aumente aportes ou reduza gastos.';}
+  const tg=[100000,200000,300000,500000,1000000],ic=['100k','200k','300k','500k','1M'];
+  let pp=PAT,res=[];for(let m=0;m<240;m++){pp+=pp*tm*(1-irM(m))+ap;for(let t=0;t<tg.length;t++){if(!res[t]&&pp>=tg[t])res[t]={a:Math.floor(m/12),ms:m%12,dt:mL(m)};}}
+  $('fMa').innerHTML=tg.map((t,i)=>{const r=res[i];
+    if(r)return '<div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--bg3);border-radius:8px;margin-bottom:6px"><div style="width:38px;height:38px;border-radius:50%;background:rgba(56,189,248,.1);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;color:#38bdf8;flex-shrink:0">'+ic[i]+'</div><div style="flex:1"><div style="font-weight:500;font-size:14px">'+F(t)+'</div><div style="font-size:12px;color:var(--text2)">'+r.a+'a '+r.ms+'m ('+r.dt+')</div></div><span class="badge" style="background:rgba(110,231,183,.1);color:var(--accent)">Atingível</span></div>';
+    return '<div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--bg3);border-radius:8px;margin-bottom:6px;opacity:.4"><div style="width:38px;height:38px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;color:var(--text3);flex-shrink:0">'+ic[i]+'</div><div><div style="font-weight:500;font-size:14px;color:var(--text3)">'+F(t)+'</div><div style="font-size:12px;color:var(--text3)">+20 anos</div></div></div>';
+  }).join('');
+}
+['fAp','fGa','fCd'].forEach(id=>$(id).addEventListener('input',upF));upF();
+</script>
+{% endblock %}

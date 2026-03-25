@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Entrar — Central Eleve{% endblock %}
+{% block content %}
+<div style="max-width:400px;margin:80px auto;text-align:center">
+<div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;margin:0 auto 16px">E</div>
+<h1 style="font-size:24px;font-weight:700;margin-bottom:4px">Central <span style="color:var(--accent)">Eleve</span></h1>
+<p style="color:var(--text2);font-size:14px;margin-bottom:32px">Seu controle financeiro inteligente</p>
+{% if error %}<div style="background:rgba(248,113,113,.1);color:var(--red);padding:10px;border-radius:8px;font-size:13px;margin-bottom:16px">{{ error }}</div>{% endif %}
+<form method="post" class="card" style="text-align:left">
+<div class="form-group"><label>Nome</label><input type="text" name="nome" required placeholder="Seu nome" autofocus></div>
+<div class="form-group"><label>PIN</label><input type="password" name="pin" required placeholder="Seu PIN de 4-6 dígitos" maxlength="6" inputmode="numeric"></div>
+<button type="submit" class="btn btn-accent" style="width:100%;justify-content:center;padding:12px">Entrar</button>
+</form>
+<p style="margin-top:20px;font-size:13px;color:var(--text3)">Primeiro acesso? <a href="/onboarding">Criar conta</a></p>
+</div>
+{% endblock %}
+

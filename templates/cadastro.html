@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}{% if editing|default(false) %}Editar{% else %}Nova{% endif %} Transação{% endblock %}
+{% block content %}
+<div style="max-width:800px;margin:0 auto">
+<h2 style="font-size:20px;font-weight:700;margin-bottom:20px">{% if editing|default(false) %}Editar transação{% else %}Nova transação{% endif %}</h2>
+<form method="post" class="card">
+<div class="grid g2">
+<div class="form-group"><label>Data</label><input type="date" name="data" value="{{trans['data'] if editing|default(false) else ''}}" required></div>
+<div class="form-group"><label>Mês referência (fatura)</label>
+<select name="mes_ref">{% for m in meses %}<option value="{{m}}" {% if editing|default(false) and trans['mes_ref']==m %}selected{% elif not editing|default(false) and request.args.get('mes')==m %}selected{% endif %}>{{mes_label(m)}}</option>{% endfor %}</select>
+<input type="month" name="mes_ref_new" style="margin-top:6px" placeholder="Ou novo: 2026-05"></div>
+</div>
+<div class="form-group"><label>Item / Descrição</label><input type="text" name="item" value="{{trans['item'] if editing|default(false) else ''}}" required placeholder="Ex: Mercado, Uber, Spotify..."></div>
+<div class="grid g3">
+<div class="form-group"><label>Categoria</label><select name="categoria">{% for c in cats %}<option value="{{c['nome']}}" {% if editing|default(false) and trans['categoria']==c['nome'] %}selected{% endif %}>{{c['nome']}}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Tipo</label><select name="tipo"><option value="Saída" {% if editing|default(false) and trans['tipo']=='Saída' %}selected{% endif %}>Saída</option><option value="Entrada" {% if editing|default(false) and trans['tipo']=='Entrada' %}selected{% endif %}>Entrada</option></select></div>
+<div class="form-group"><label>Situação</label><select name="situacao"><option value="Pendente">Pendente</option><option value="Pago" {% if editing|default(false) and trans['situacao']=='Pago' %}selected{% endif %}>Pago</option><option value="Recebido" {% if editing|default(false) and trans['situacao']=='Recebido' %}selected{% endif %}>Recebido</option></select></div>
+</div>
+<div class="grid g2">
+<div class="form-group"><label>Valor (R$)</label><input type="text" name="valor" value="{{trans['valor'] if editing|default(false) else ''}}" required placeholder="0,00"></div>
+<div class="form-group"><label>Observação</label><input type="text" name="observacao" value="{{trans.get('observacao','') if editing|default(false) else ''}}"></div>
+</div>
+<div style="display:flex;gap:12px;margin-top:8px">
+<button type="submit" class="btn btn-accent">{% if editing|default(false) %}Salvar{% else %}Cadastrar{% endif %}</button>
+<a href="/" class="btn btn-outline">Cancelar</a>
+</div>
+</form>
+{% if ultimas|default([]) %}
+<div class="card" style="margin-top:20px">
+<div class="card-h"><span class="dot" style="background:var(--purple)"></span>Últimas transações cadastradas</div>
+<div style="overflow-x:auto"><table>
+<tr><th>Data</th><th>Item</th><th>Categoria</th><th>Situação</th><th style="text-align:right">Valor</th><th></th></tr>
+{% for t in ultimas %}
+<tr>
+<td class="mono">{{t['data']}}</td><td>{{t['item']}}</td>
+<td><span class="cat-badge"><span class="cat-dot" style="background:{{t['cat_cor']}}"></span>{{t['categoria']}}</span></td>
+<td><span class="badge b-{{t['situacao']|lower}}">{{t['situacao']}}</span></td>
+<td class="mono" style="text-align:right;color:{% if t['tipo']=='Entrada' %}var(--accent){% else %}var(--red){% endif %}">R$ {{ '{:,.2f}'.format(t['valor']).replace(',','X').replace('.',',').replace('X','.') }}</td>
+<td><a href="/editar/{{t['id']}}" class="btn btn-outline btn-sm">Editar</a></td>
+</tr>{% endfor %}
+</table></div></div>
+{% endif %}
+</div>
+{% endblock %}

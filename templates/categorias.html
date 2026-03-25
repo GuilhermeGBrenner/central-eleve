@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Categorias{% endblock %}
+{% block content %}
+<h2 style="font-size:20px;font-weight:700;margin-bottom:20px">Categorias</h2>
+<div class="grid g2">
+<div class="card">
+<div class="card-h"><span class="dot" style="background:var(--accent)"></span>Suas categorias</div>
+<table><tr><th>Cor</th><th>Nome</th><th>Tipo</th><th></th></tr>
+{% for c in cats %}<tr>
+<td><span class="cat-dot" style="background:{{c['cor']}};width:12px;height:12px"></span></td>
+<td>{{c['nome']}}</td><td>{{c['tipo']}}</td>
+<td><form method="post" style="display:inline"><input type="hidden" name="action" value="delete"><input type="hidden" name="nome" value="{{c['nome']}}"><button class="btn btn-red btn-sm" onclick="return confirm('Excluir?')">×</button></form></td>
+</tr>{% endfor %}</table>
+</div>
+<div class="card">
+<div class="card-h"><span class="dot" style="background:var(--blue)"></span>Nova categoria</div>
+<form method="post"><input type="hidden" name="action" value="add">
+<div class="form-group"><label>Nome</label><input type="text" name="nome" required></div>
+<div class="form-group"><label>Tipo</label><select name="tipo"><option value="Saída">Saída</option><option value="Entrada">Entrada</option></select></div>
+<div class="form-group"><label>Cor</label><input type="color" name="cor" value="#6ee7b7" style="height:40px;padding:4px"></div>
+<button class="btn btn-accent">Adicionar</button>
+</form></div></div>
+{% endblock %}
